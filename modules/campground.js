@@ -11,6 +11,7 @@ ImageSchema.virtual('thumbnail').get(function () {
     return this.url.replace('/upload', '/upload/w_200')
 });//we use this so that we dont have to store the replaced url in our model or database because we are just deriving it from the info that we are already storing 
 
+const opts = { toJSON: { virtuals: true } };//to help the clusterMap code to not ignore JSON code 
 const CampgroundSchema = new Schema({
     title: {
         type: String
@@ -20,6 +21,17 @@ const CampgroundSchema = new Schema({
     },
     description: {
         type: String
+    },
+    geometry: {
+        type: {
+            type: String,
+            enum: ["Point"],
+            required: true
+        },
+        coordinates: {
+            type: [Number],
+            required: true
+        }
     },
     location: {
         type: String
@@ -35,7 +47,13 @@ const CampgroundSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Review'
     }]
-})
+}, opts);
+
+CampgroundSchema.virtual('properties.popUPmsg').get(function () {
+    return `
+    <a href="/campgrounds/${this._id}">${this.title}</a>
+    <p>${this.description.substring(0, 20)}...</p>`
+});
 
 CampgroundSchema.post('findOneAndDelete', async (doc) => {
     if (doc) {//if there was something to be deleted 

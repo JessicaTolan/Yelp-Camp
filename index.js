@@ -27,6 +27,9 @@ const ExpressError = require('./utils/ExpressError');//to have access to the cus
 const methodOverride = require('method-override');
 app.use(methodOverride('_method')); //to get the form to update the put instead of post
 
+const dbURL = 'mongodb://127.0.0.1:27017/yelp-camp' //process.env.MONGO_URL;
+////////REQUIRING HELMET//////////////////////////////////////////////////////////////
+const helmet = require('helmet');
 
 ////////REQUIRING THE ROUTES//////////////////////////////////////////////////////////
 const campgroundRoutes = require('./routes/campgrounds');//to use the campground routes
@@ -35,7 +38,18 @@ const userRoutes = require('./routes/user');
 
 //////SETTING UP SESSIONS///////////////////////////////////////////////////////////////
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
+
+const store = MongoStore.create({
+    mongoUrl: dbURL,
+    touchAfter: 24 * 60 * 60,
+    crypto: {
+        secret: 'thisshouldbeabettersecret!'
+    }
+});
 app.use(session({
+    store,//this is so that everything is stored on mongo online
+    name: 'specialness', //this will disguise the session so someone will find it harder to steal session information if they dont know which name the info is under
     secret: 'thisshouldbeabettersecret',
     resave: false,
     saveUninitialized: true,
@@ -77,7 +91,8 @@ app.use('/', userRoutes);
 ////////Setting up Mongoose /////////////////////////////////////////////////////
 const mongoose = require('mongoose');
 mongoose.set('strictQuery', false);
-mongoose.connect('mongodb://127.0.0.1:27017/yelp-camp', { useNewUrlParser: true, useUnifiedTopology: true })
+//'mongodb://127.0.0.1:27017/yelp-camp'
+mongoose.connect(dbURL, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {
         console.log('Connected!!');
     })
@@ -89,8 +104,61 @@ mongoose.connect('mongodb://127.0.0.1:27017/yelp-camp', { useNewUrlParser: true,
 //const Campground = require('./modules/campground');//look in the modules folder and then in campround and this is ok because we are in the YelpCamp
 //const { findById } = require('./modules/campground');
 //we have created a model called Campground which will have in all information in the db with campground schema
+/////////MONGO SANITIZE//////////////////////////////////////////////////////////////
 
+const mongoSanitize = require
 
+////////USING HELMET/////////////////////////////////////////////////////
+app.use(helmet());//security
+
+const scriptSrcUrls = [
+    "https://stackpath.bootstrapcdn.com/",
+    "https://api.tiles.mapbox.com/",
+    "https://api.mapbox.com/",
+    "https://kit.fontawesome.com/",
+    "https://cdnjs.cloudflare.com/",
+    "https://cdn.jsdelivr.net",
+];
+const styleSrcUrls = [
+    "https://kit-free.fontawesome.com/",
+    "https://stackpath.bootstrapcdn.com/",
+    "https://api.mapbox.com/",
+    "https://api.tiles.mapbox.com/",
+    "https://fonts.googleapis.com/",
+    "https://use.fontawesome.com/",
+];
+const connectSrcUrls = [
+    "https://api.mapbox.com/",
+    "https://a.tiles.mapbox.com/",
+    "https://b.tiles.mapbox.com/",
+    "https://events.mapbox.com/",
+];
+const fontSrcUrls = [];
+app.use(
+    helmet.contentSecurityPolicy({
+        directives: {
+            defaultSrc: [],
+            connectSrc: ["'self'", ...connectSrcUrls],
+            scriptSrc: ["'unsafe-inline'", "'self'", ...scriptSrcUrls],
+            styleSrc: ["'self'", "'unsafe-inline'", ...styleSrcUrls],
+            workerSrc: ["'self'", "blob:"],
+            objectSrc: [],
+            imgSrc: [
+                "'self'",
+                "blob:",
+                "data:",
+                "https://res.cloudinary.com/dwidriwu2/", //SHOULD MATCH YOUR CLOUDINARY ACCOUNT! 
+                "https://images.unsplash.com/",
+            ],
+            fontSrc: ["'self'", ...fontSrcUrls],
+        },
+    })
+);//this is so that update the default content security feature in helmet so that it allows outside scipts and images etc.
+/////////////HOME PAGE///////////////////////////////////////////////////
+
+app.get('/', (req, res) => {
+    res.render('campgrounds/home')
+})
 
 /////////////CUSTOM ERROR HANDLING MIDDLEWARE ///////////////////////////
 

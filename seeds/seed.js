@@ -15,7 +15,7 @@ const { descriptors, places } = require('./seedHelper');
 
 const seedsDB = async () => {
     await Campground.deleteMany({});
-    for (let num = 0; num < 20; num++) {
+    for (let num = 0; num < 400; num++) {
         const randomGenerator = Math.floor((Math.random() * cities.length) + 1);
         const randomDes = Math.floor((Math.random() * descriptors.length) + 1);
         const randomPlaces = Math.floor((Math.random() * places.length) + 1);
@@ -29,6 +29,13 @@ const seedsDB = async () => {
                     filename: 'YelpCamp/mcqumngeavb9cp9zxju8',
                 }
             ],
+            geometry: {
+                type: "Point",
+                coordinates: [
+                    cities[randomGenerator].longitude,
+                    cities[randomGenerator].latitude
+                ]
+            },
             price: randomPrice,
             author: '643462b062d04b0b186253e7',
             description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Sequi exercitationem obcaecati quod impedit odit eos accusamus expedita cum molestias labore modi amet corporis distinctio dignissimos, nisi, placeat fugit veritatis recusandae.'

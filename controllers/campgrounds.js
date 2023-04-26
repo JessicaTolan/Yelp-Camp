@@ -1,6 +1,10 @@
 //this file will contain all the campground functions to help keep in line with the MVC framework (models, views and controller framework)
 const Campground = require('../modules/campground');
 const { cloudinary } = require('../cloudinary');
+const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
+const mapBoxToken = process.env.MAPBOX_TOKEN;
+const geocoder = mbxGeocoding({ accessToken: mapBoxToken });
+
 module.exports.index = async (req, res) => {
     const allCampgrounds = await Campground.find({});
     res.render('campgrounds/index', { allCampgrounds });
@@ -12,10 +16,15 @@ module.exports.renderNewForm = (req, res) => {
 };
 
 module.exports.createCampground = async (req, res) => {
-    //if (!req.body.campground) throw new ExpressError("Not Valid Campground Data", 400);
+    const geoData = await geocoder.forwardGeocode({
+        query: req.body.campground.location,
+        limit: 1
+    }).send()
     const newCampground = new Campground(req.body.campground);
+    newCampground.geometry = geoData.body.features[0].geometry;
     newCampground.author = req.user._id;
     newCampground.images = req.files.map(f => ({ url: f.path, filename: f.filename })); // req.files is an array of objects so f is that and it has properties like path and filename which we are matching to names in our Campground model
+    console.log(newCampground);
     await newCampground.save();
     req.flash('success', 'Successfully added a campground');
     res.redirect(`/campgrounds/${newCampground._id}`);
